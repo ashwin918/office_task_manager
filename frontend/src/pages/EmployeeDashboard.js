@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-
+ 
+const API = 'https://office-task-manager-5krn.onrender.com';
+ 
 export default function EmployeeDashboard() {
   const { user, logout } = useAuth();
   const [tasks, setTasks] = useState([]);
@@ -10,40 +12,40 @@ export default function EmployeeDashboard() {
   const [updateForm, setUpdateForm] = useState({ completion_percentage: 0, employee_notes: '' });
   const [msg, setMsg] = useState('');
   const [filter, setFilter] = useState('all');
-
+ 
   const fetchData = useCallback(async () => {
     const [t, s] = await Promise.all([
-      axios.get(`/api/tasks?role=employee&employee_id=${user.employee_id}`),
-      axios.get(`/api/stats?employee_id=${user.employee_id}`),
+      axios.get(`${API}/api/tasks?role=employee&employee_id=${user.employee_id}`),
+      axios.get(`${API}/api/stats?employee_id=${user.employee_id}`),
     ]);
     setTasks(t.data);
     setStats(s.data);
   }, [user.employee_id]);
-
+ 
   useEffect(() => { fetchData(); }, [fetchData]);
-
+ 
   const flash = (m) => { setMsg(m); setTimeout(() => setMsg(''), 3000); };
-
+ 
   const openEdit = (task) => {
     setEditing(task.id);
     setUpdateForm({ completion_percentage: task.completion_percentage, employee_notes: task.employee_notes || '' });
   };
-
+ 
   const saveProgress = async (taskId) => {
     try {
-      await axios.patch(`/api/tasks/${taskId}/progress`, updateForm);
+      await axios.patch(`${API}/api/tasks/${taskId}/progress`, updateForm);
       flash('Progress updated!');
       setEditing(null);
       fetchData();
     } catch (e) { flash('Error updating task'); }
   };
-
+ 
   const priorityColor = (p) => ({ high: '#ef4444', medium: '#f0a500', low: '#22c55e' }[p] || '#888');
   const statusBg = (s) => ({ pending: 'rgba(148,163,184,0.15)', in_progress: 'rgba(240,165,0,0.15)', completed: 'rgba(34,197,94,0.15)' }[s]);
   const statusColor = (s) => ({ pending: '#94a3b8', in_progress: '#f0a500', completed: '#22c55e' }[s]);
-
+ 
   const filtered = filter === 'all' ? tasks : tasks.filter(t => t.status === filter);
-
+ 
   return (
     <div style={S.app}>
       {/* SIDEBAR */}
@@ -81,11 +83,11 @@ export default function EmployeeDashboard() {
           <button style={S.logoutBtn} onClick={logout}>Sign Out</button>
         </div>
       </div>
-
+ 
       {/* MAIN */}
       <div style={S.main}>
         {msg && <div style={S.toast}>{msg}</div>}
-
+ 
         <div style={S.content}>
           <div style={S.pageHeader}>
             <div>
@@ -100,7 +102,7 @@ export default function EmployeeDashboard() {
               ))}
             </div>
           </div>
-
+ 
           <div style={S.taskList}>
             {filtered.map(task => (
               <div key={task.id} style={S.taskCard}>
@@ -127,17 +129,17 @@ export default function EmployeeDashboard() {
                     </button>
                   </div>
                 </div>
-
+ 
                 <div style={S.progressSection}>
                   <div style={S.progressBar}>
                     <div style={{ ...S.progressFill, width: `${task.completion_percentage}%` }} />
                   </div>
                 </div>
-
+ 
                 {task.employee_notes && editing !== task.id && (
                   <div style={S.noteDisplay}>💬 {task.employee_notes}</div>
                 )}
-
+ 
                 {editing === task.id && (
                   <div style={S.editPanel}>
                     <div style={S.editRow}>
@@ -178,7 +180,7 @@ export default function EmployeeDashboard() {
                 )}
               </div>
             ))}
-
+ 
             {filtered.length === 0 && (
               <div style={S.empty}>
                 <div style={S.emptyIcon}>📭</div>
@@ -191,7 +193,7 @@ export default function EmployeeDashboard() {
     </div>
   );
 }
-
+ 
 const S = {
   app: { display: 'flex', minHeight: '100vh', background: '#0d0d18', fontFamily: "'DM Sans', sans-serif", color: '#e2e8f0' },
   sidebar: { width: '260px', background: 'rgba(255,255,255,0.03)', borderRight: '1px solid rgba(255,255,255,0.07)', display: 'flex', flexDirection: 'column', flexShrink: 0 },
@@ -223,7 +225,7 @@ const S = {
   filterBtn: { background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'rgba(255,255,255,0.5)', padding: '8px 16px', fontSize: '13px', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" },
   filterActive: { background: 'rgba(240,165,0,0.15)', borderColor: '#f0a500', color: '#f0a500' },
   taskList: { display: 'flex', flexDirection: 'column', gap: '16px' },
-  taskCard: { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '24px', transition: 'border-color 0.2s' },
+  taskCard: { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '24px' },
   cardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' },
   cardLeft: { flex: 1 },
   cardRight: { textAlign: 'right', flexShrink: 0, marginLeft: '20px' },
@@ -247,7 +249,7 @@ const S = {
   quickPcts: { display: 'flex', gap: '8px' },
   pctBtn: { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'rgba(255,255,255,0.5)', padding: '8px 16px', fontSize: '13px', cursor: 'pointer', fontFamily: "'Space Mono', monospace" },
   pctActive: { background: 'rgba(240,165,0,0.2)', borderColor: '#f0a500', color: '#f0a500' },
-  saveBtn: { background: 'linear-gradient(135deg,#f0a500,#e67e00)', border: 'none', borderRadius: '10px', color: '#0d0d18', padding: '14px', fontSize: '14px', fontWeight: '700', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif', letterSpacing: '1px", alignSelf: 'flex-end', paddingLeft: '28px', paddingRight: '28px' },
+  saveBtn: { background: 'linear-gradient(135deg,#f0a500,#e67e00)', border: 'none', borderRadius: '10px', color: '#0d0d18', padding: '14px 28px', fontSize: '14px', fontWeight: '700', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", alignSelf: 'flex-end' },
   toast: { position: 'fixed', top: '20px', right: '20px', background: 'rgba(34,197,94,0.9)', padding: '14px 22px', borderRadius: '10px', color: '#fff', fontWeight: '600', zIndex: 999, fontSize: '14px', boxShadow: '0 8px 24px rgba(0,0,0,0.4)' },
   empty: { textAlign: 'center', padding: '60px 20px', color: 'rgba(255,255,255,0.3)' },
   emptyIcon: { fontSize: '40px', marginBottom: '12px' },

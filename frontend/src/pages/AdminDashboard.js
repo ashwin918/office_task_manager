@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-
+ 
+const API = 'https://office-task-manager-5krn.onrender.com';
+ 
 export default function AdminDashboard() {
   const { user, logout } = useAuth();
   const [tab, setTab] = useState('dashboard');
@@ -14,68 +16,67 @@ export default function AdminDashboard() {
   const [taskForm, setTaskForm] = useState({ title: '', description: '', assigned_to: '', priority: 'medium', due_date: '' });
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
-
+ 
   const fetchAll = useCallback(async () => {
     const [e, t, s] = await Promise.all([
-      axios.get('/api/employees'),
-      axios.get('/api/tasks'),
-      axios.get('/api/stats'),
+      axios.get(`${API}/api/employees`),
+      axios.get(`${API}/api/tasks`),
+      axios.get(`${API}/api/stats`),
     ]);
     setEmployees(e.data);
     setTasks(t.data);
     setStats(s.data);
   }, []);
-
+ 
   useEffect(() => { fetchAll(); }, [fetchAll]);
-
+ 
   const flash = (m, isErr = false) => {
     if (isErr) setErr(m); else setMsg(m);
     setTimeout(() => { setMsg(''); setErr(''); }, 3000);
   };
-
+ 
   const addEmployee = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('/api/employees', empForm);
+      await axios.post(`${API}/api/employees`, empForm);
       flash('Employee added successfully!');
       setShowAddEmp(false);
       setEmpForm({ username: '', password: '', full_name: '', email: '', department: '', position: '' });
       fetchAll();
     } catch (er) { flash(er.response?.data?.error || 'Error', true); }
   };
-
+ 
   const deleteEmployee = async (id) => {
     if (!window.confirm('Delete this employee and all their tasks?')) return;
-    await axios.delete(`/api/employees/${id}`);
+    await axios.delete(`${API}/api/employees/${id}`);
     flash('Employee removed');
     fetchAll();
   };
-
+ 
   const addTask = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('/api/tasks', { ...taskForm, assigned_by: user.id });
+      await axios.post(`${API}/api/tasks`, { ...taskForm, assigned_by: user.id });
       flash('Task assigned!');
       setShowAddTask(false);
       setTaskForm({ title: '', description: '', assigned_to: '', priority: 'medium', due_date: '' });
       fetchAll();
     } catch (er) { flash(er.response?.data?.error || 'Error', true); }
   };
-
+ 
   const deleteTask = async (id) => {
     if (!window.confirm('Delete this task?')) return;
-    await axios.delete(`/api/tasks/${id}`);
+    await axios.delete(`${API}/api/tasks/${id}`);
     flash('Task deleted');
     fetchAll();
   };
-
+ 
   const priorityColor = (p) => ({ high: '#ef4444', medium: '#f0a500', low: '#22c55e' }[p] || '#888');
   const statusBg = (s) => ({ pending: 'rgba(148,163,184,0.15)', in_progress: 'rgba(240,165,0,0.15)', completed: 'rgba(34,197,94,0.15)' }[s]);
   const statusColor = (s) => ({ pending: '#94a3b8', in_progress: '#f0a500', completed: '#22c55e' }[s]);
-
+ 
   return (
     <div style={S.app}>
-      {/* SIDEBAR */}
       <div style={S.sidebar}>
         <div style={S.sideTop}>
           <div style={S.logo}>⬡ WORKHIVE</div>
@@ -99,16 +100,14 @@ export default function AdminDashboard() {
           <button style={S.logoutBtn} onClick={logout}>Sign Out</button>
         </div>
       </div>
-
-      {/* MAIN */}
+ 
       <div style={S.main}>
         {(msg || err) && (
           <div style={{ ...S.toast, background: err ? 'rgba(239,68,68,0.9)' : 'rgba(34,197,94,0.9)' }}>
             {msg || err}
           </div>
         )}
-
-        {/* DASHBOARD TAB */}
+ 
         {tab === 'dashboard' && (
           <div style={S.content}>
             <h2 style={S.pageTitle}>Dashboard Overview</h2>
@@ -128,7 +127,6 @@ export default function AdminDashboard() {
                 </div>
               ))}
             </div>
-
             <h3 style={S.sectionTitle}>Recent Tasks</h3>
             <div style={S.table}>
               <div style={S.tableHead}>
@@ -138,16 +136,10 @@ export default function AdminDashboard() {
                 <div key={t.id} style={S.tableRow}>
                   <span style={S.taskTitle}>{t.title}</span>
                   <span style={S.cell}>{t.employee_name}</span>
-                  <span style={{ ...S.badge, color: priorityColor(t.priority), borderColor: priorityColor(t.priority) + '44' }}>
-                    {t.priority}
-                  </span>
-                  <span style={{ ...S.badge, color: statusColor(t.status), background: statusBg(t.status), border: 'none' }}>
-                    {t.status.replace('_', ' ')}
-                  </span>
+                  <span style={{ ...S.badge, color: priorityColor(t.priority), borderColor: priorityColor(t.priority) + '44' }}>{t.priority}</span>
+                  <span style={{ ...S.badge, color: statusColor(t.status), background: statusBg(t.status), border: 'none' }}>{t.status.replace('_', ' ')}</span>
                   <div style={S.progressWrap}>
-                    <div style={S.progressBar}>
-                      <div style={{ ...S.progressFill, width: `${t.completion_percentage}%` }} />
-                    </div>
+                    <div style={S.progressBar}><div style={{ ...S.progressFill, width: `${t.completion_percentage}%` }} /></div>
                     <span style={S.progText}>{t.completion_percentage}%</span>
                   </div>
                 </div>
@@ -155,15 +147,13 @@ export default function AdminDashboard() {
             </div>
           </div>
         )}
-
-        {/* EMPLOYEES TAB */}
+ 
         {tab === 'employees' && (
           <div style={S.content}>
             <div style={S.pageHeader}>
               <h2 style={S.pageTitle}>Employees</h2>
               <button style={S.addBtn} onClick={() => setShowAddEmp(true)}>+ Add Employee</button>
             </div>
-
             {showAddEmp && (
               <div style={S.modal}>
                 <div style={S.modalCard}>
@@ -193,7 +183,6 @@ export default function AdminDashboard() {
                 </div>
               </div>
             )}
-
             <div style={S.empGrid}>
               {employees.map(emp => (
                 <div key={emp.id} style={S.empCard}>
@@ -201,9 +190,7 @@ export default function AdminDashboard() {
                   <div style={S.empInfo}>
                     <div style={S.empName}>{emp.full_name}</div>
                     <div style={S.empDept}>{emp.position} {emp.department ? `• ${emp.department}` : ''}</div>
-                    <div style={S.empCreds}>
-                      <span style={S.credBadge}>👤 {emp.username}</span>
-                    </div>
+                    <div style={S.empCreds}><span style={S.credBadge}>👤 {emp.username}</span></div>
                     <div style={S.empEmail}>{emp.email}</div>
                   </div>
                   <button style={S.deleteBtn} onClick={() => deleteEmployee(emp.id)}>✕</button>
@@ -213,15 +200,13 @@ export default function AdminDashboard() {
             </div>
           </div>
         )}
-
-        {/* TASKS TAB */}
+ 
         {tab === 'tasks' && (
           <div style={S.content}>
             <div style={S.pageHeader}>
               <h2 style={S.pageTitle}>All Tasks</h2>
               <button style={S.addBtn} onClick={() => setShowAddTask(true)}>+ Assign Task</button>
             </div>
-
             {showAddTask && (
               <div style={S.modal}>
                 <div style={S.modalCard}>
@@ -271,7 +256,6 @@ export default function AdminDashboard() {
                 </div>
               </div>
             )}
-
             <div style={S.taskList}>
               {tasks.map(t => (
                 <div key={t.id} style={S.taskCard}>
@@ -284,24 +268,16 @@ export default function AdminDashboard() {
                         {t.due_date && <span style={S.dueTag}>Due: {new Date(t.due_date).toLocaleDateString()}</span>}
                       </div>
                       {t.description && <div style={S.taskDesc}>{t.description}</div>}
-                      {t.employee_notes && (
-                        <div style={S.empNote}><em>Employee note:</em> {t.employee_notes}</div>
-                      )}
+                      {t.employee_notes && <div style={S.empNote}><em>Employee note:</em> {t.employee_notes}</div>}
                     </div>
                     <div style={S.taskCardRight}>
-                      <span style={{ ...S.badge, color: priorityColor(t.priority), borderColor: priorityColor(t.priority) + '44' }}>
-                        {t.priority}
-                      </span>
-                      <span style={{ ...S.badge, color: statusColor(t.status), background: statusBg(t.status), border: 'none', marginLeft: 8 }}>
-                        {t.status.replace('_', ' ')}
-                      </span>
+                      <span style={{ ...S.badge, color: priorityColor(t.priority), borderColor: priorityColor(t.priority) + '44' }}>{t.priority}</span>
+                      <span style={{ ...S.badge, color: statusColor(t.status), background: statusBg(t.status), border: 'none', marginLeft: 8 }}>{t.status.replace('_', ' ')}</span>
                       <button style={S.deleteBtnSm} onClick={() => deleteTask(t.id)}>✕</button>
                     </div>
                   </div>
                   <div style={S.taskProgress}>
-                    <div style={S.progressBar}>
-                      <div style={{ ...S.progressFill, width: `${t.completion_percentage}%` }} />
-                    </div>
+                    <div style={S.progressBar}><div style={{ ...S.progressFill, width: `${t.completion_percentage}%` }} /></div>
                     <span style={S.progText}>{t.completion_percentage}%</span>
                   </div>
                 </div>
@@ -314,7 +290,7 @@ export default function AdminDashboard() {
     </div>
   );
 }
-
+ 
 const S = {
   app: { display: 'flex', minHeight: '100vh', background: '#0d0d18', fontFamily: "'DM Sans', sans-serif", color: '#e2e8f0' },
   sidebar: { width: '240px', background: 'rgba(255,255,255,0.03)', borderRight: '1px solid rgba(255,255,255,0.07)', display: 'flex', flexDirection: 'column', flexShrink: 0 },
@@ -322,7 +298,7 @@ const S = {
   logo: { fontFamily: "'Space Mono', monospace", fontSize: '16px', fontWeight: '700', color: '#f0a500', letterSpacing: '2px', marginBottom: '8px' },
   adminBadge: { fontSize: '10px', background: 'rgba(240,165,0,0.15)', color: '#f0a500', borderRadius: '4px', padding: '3px 8px', display: 'inline-block', letterSpacing: '1px', fontFamily: "'Space Mono', monospace" },
   nav: { flex: 1, padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '4px' },
-  navBtn: { background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.5)', textAlign: 'left', padding: '10px 14px', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", transition: 'all 0.2s' },
+  navBtn: { background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.5)', textAlign: 'left', padding: '10px 14px', borderRadius: '8px', fontSize: '14px', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" },
   navActive: { background: 'rgba(240,165,0,0.12)', color: '#f0a500' },
   sideBottom: { padding: '20px 16px', borderTop: '1px solid rgba(255,255,255,0.07)' },
   userInfo: { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' },
